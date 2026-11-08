@@ -92,6 +92,11 @@
         startIconUrl: "/gpx-shortcode/pin-icon-start.png",
         endIconUrl: "/gpx-shortcode/pin-icon-end.png",
         shadowUrl: "/gpx-shortcode/pin-shadow.png",
+        // Half of leaflet-gpx defaults (icon 33x45, shadow 50x50)
+        iconSize: [16.5, 22.5],
+        iconAnchor: [8, 22.5],
+        shadowSize: [25, 25],
+        shadowAnchor: [8, 23.5],
       },
       // looping through all specified colours
       polyline_options: {color: colors[index % colors.length], distanceMarkers: false, smoothFactor: 0.5 }
