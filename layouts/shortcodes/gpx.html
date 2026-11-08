@@ -1,5 +1,5 @@
-{{/* TODO: allow multiple maps to be displayed on the same page */}}
-
+{{ if not (.Page.Store.Get "gpxAssetsLoaded") }}
+{{ .Page.Store.Set "gpxAssetsLoaded" true }}
 <link rel="stylesheet" href="{{ site.Params.gpx.leafletCSS | default ("/gpx-shortcode/leaflet/leaflet.css" | relURL) }}" crossorigin="" />
 <link rel="stylesheet" href="{{ "/gpx-shortcode/style.css" | relURL }}" />
 <link rel="stylesheet" href="{{ "/gpx-shortcode/leaflet-distance-marker.css" | relURL }}" />
@@ -7,35 +7,34 @@
 <script src="{{ "/gpx-shortcode/leaflet.geometryutil.js" | relURL }}"></script>
 <script src="{{ "/gpx-shortcode/leaflet-distance-marker.js" | relURL }}"></script>
 <script src="{{ site.Params.gpx.leafletGpxJS | default "https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/gpx.min.js" }}"></script>
+{{ end }}
 
 {{/* HTML scaffolding. Content will be loaded in the JS below */}}
-<section id="container" class="gpx">
-  <div class="map" id="map-{{.Get "id" }}"></div>
+<section id="container-{{ .Ordinal }}" class="gpx">
+  <div class="map" id="map-{{ .Ordinal }}"></div>
   <footer>
     {{- $.Scratch.Set "counter" 0 }}
     {{ $len := len .Params }}
     {{ $colors := site.Params.gpx.trackColors | default (slice "blue" "darkblue" "purple")}}
     {{ range .Params }}
       <ul class="info">
-        <li><input type="checkbox" checked class="tracks" track-id="{{ $.Scratch.Get "counter" }}"/></li>
         <li style="color:{{ index $colors (mod ($.Scratch.Get "counter") (len $colors))}}">&#9632;</li>
         <!-- label indices start from 1 -->
         {{- $.Scratch.Set "counter" (add ($.Scratch.Get "counter") 1) }}
         <li>{{ if gt $len 1 }}Track {{$.Scratch.Get "counter" }}: {{ end }}</li>
-        <li class="start-{{ . }}"></li>
         <li class="distance-{{ . }}"></li>
         <li class="duration-{{ . }}"></li>
         <li class="elevation-{{ . }}"></li>
-        <li><a href="{{ . }}">Download</a></li>
       </ul>
     {{ end }}
   </footer>
 </section>
 
 <script>
+(function() {
   var urls = new Array({{ range .Params }}{{ . }},{{ end }})
-  var mapid = "map-{{.Get "id" }}";
-  var container = document.getElementById("container");
+  var mapid = "map-{{ .Ordinal }}";
+  var container = document.getElementById("container-{{ .Ordinal }}");
   var colors = {{ site.Params.gpx.trackColors | default (slice "blue" "darkblue" "purple")}};
   var layers = new Array();
     
@@ -65,13 +64,13 @@
     Array.from(document.getElementsByClassName("location")).forEach(addMarker);
     
     // At first all tracks are visible
-    document.querySelectorAll(".tracks").forEach(function(item) {
+    container.querySelectorAll(".tracks").forEach(function(item) {
       item.checked = true;
     });
   });
   
   // Event listeners to toggle visibility of each track
-  document.querySelectorAll(".tracks").forEach(function(item) {
+  container.querySelectorAll(".tracks").forEach(function(item) {
     item.addEventListener("click", function() {
       var id = this.getAttribute("track-id");
       if (event.currentTarget.checked) {
@@ -95,7 +94,7 @@
         shadowUrl: "/gpx-shortcode/pin-shadow.png",
       },
       // looping through all specified colours
-      polyline_options: {color: colors[index % colors.length], distanceMarkers: true, smoothFactor: 0.5 }
+      polyline_options: {color: colors[index % colors.length], distanceMarkers: false, smoothFactor: 0.5 }
     }).on("loaded", function(e) {
       var gpx = e.target;
       if (bounds === null) {
@@ -157,15 +156,15 @@
   function addMetadata(gpx, url) {
     var date = gpx.get_start_time();
     var datestring = date.getFullYear() + "-" + (date.getMonth()+1).toString().padStart(2, "0") + "-" + date.getDate().toString().padStart(2, "0")  + " " + date.getHours().toString().padStart(2, "0") + ":" + date.getMinutes().toString().padStart(2, "0");
-    _c("start-" + url).textContent = (date > 0) ? datestring : "";
-    _c("distance-" + url).textContent = "Distance: " + (gpx.get_distance() / 1000).toFixed(2) + " km";
+    _c("distance-" + url).textContent = "Lengde: " + (gpx.get_distance() / 1000).toFixed(2) + " km";
     var duration = gpx.get_moving_time();
-    _c("duration-" + url).textContent = (duration > 0) ? "Duration: " + gpx.get_duration_string(duration) : "";
-    _c("elevation-"+ url).textContent = `Elevation: ${gpx.get_elevation_gain().toFixed(0)} m, -${gpx.get_elevation_loss().toFixed(0)} m, net:  ${(gpx.get_elevation_gain() - gpx.get_elevation_loss()).toFixed(0)}  m`;
+    _c("duration-" + url).textContent = (duration > 0) ? "Tid: " + gpx.get_duration_string(duration) : "";
+    _c("elevation-"+ url).textContent = `Høydeforskjell: ${gpx.get_elevation_gain().toFixed(0)} m, -${gpx.get_elevation_loss().toFixed(0)} m, sum:  ${(gpx.get_elevation_gain() - gpx.get_elevation_loss()).toFixed(0)}  m`;
   }
   
   // Helper method to get DOM element by class
   function _c(c) {
     return container.getElementsByClassName(c)[0];
   }
+})();
 </script>

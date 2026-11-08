@@ -1,19 +1,16 @@
 .gpx {
-     border: 1px #aaa solid;
      max-width: 100%;
      margin: 1em auto;
 }
  .gpx .map {
-     border: 1px #888 solid;
-     border-left: none;
-     border-right: none;
+     border: 1px #aaa solid;
      width: 100%;
-     min-height: 800px;
+     min-height: 500px;
      margin: 0;
      z-index: 0;
 }
  .gpx footer {
-     background: #f0f0f0;
+     background: #ffffff;
      padding: 0.5em;
 }
  .gpx ul.info {
