@@ -99,7 +99,7 @@
         shadowAnchor: [8, 23.5],
       },
       // looping through all specified colours
-      polyline_options: {color: colors[index % colors.length], distanceMarkers: false, smoothFactor: 0.5 }
+      polyline_options: {color: colors[index % colors.length], distanceMarkers: false, smoothFactor: 1, opacity: 0.8, weight: 2 }
     }).on("loaded", function(e) {
       var gpx = e.target;
       if (bounds === null) {
