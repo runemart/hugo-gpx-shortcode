@@ -39,7 +39,8 @@
   var layers = new Array();
     
   // Create map and layers
-  var map = L.map(mapid, { fullscreenControl: true, scrollWheelZoom: false });
+  var map = L.map(mapid, { scrollWheelZoom: false });
+  addFullscreenControl(map);
   {{ $layers := site.Params.gpx.layers }}
   
   // If no layers are specified fall back to default (OpenStreetMap)
@@ -167,6 +168,80 @@
     _c("elevation-"+ url).textContent = `Høydeforskjell: ${gpx.get_elevation_gain().toFixed(0)} m, -${gpx.get_elevation_loss().toFixed(0)} m, sum:  ${(gpx.get_elevation_gain() - gpx.get_elevation_loss()).toFixed(0)}  m`;
   }
   
+  // Fullscreen toggle button. Uses the Fullscreen API where available and
+  // falls back to a CSS "fill the window" mode (e.g. iPhone Safari).
+  function addFullscreenControl(map) {
+    var el = map.getContainer();
+    var enterIcon = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M3 3h7v2H5v5H3zm11 0h7v7h-2V5h-5zM3 14h2v5h5v2H3zm16 0h2v7h-7v-2h5z"/></svg>';
+    var exitIcon = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M8 3h2v7H3V8h5zm6 0h2v5h5v2h-7zM3 14h7v7H8v-5H3zm11 0h7v2h-5v5h-2z"/></svg>';
+    var button;
+
+    function nativeElement() {
+      return document.fullscreenElement || document.webkitFullscreenElement;
+    }
+    function isFullscreen() {
+      return nativeElement() === el || el.classList.contains("gpx-fullscreen-fallback");
+    }
+    function update() {
+      var on = isFullscreen();
+      el.classList.toggle("gpx-is-fullscreen", on);
+      button.innerHTML = on ? exitIcon : enterIcon;
+      button.title = on ? "Avslutt fullskjerm" : "Fullskjerm";
+      button.setAttribute("aria-label", button.title);
+      // Scroll-wheel zoom is handy in fullscreen, but annoying when scrolling the page
+      on ? map.scrollWheelZoom.enable() : map.scrollWheelZoom.disable();
+      map.invalidateSize();
+    }
+    function toggle() {
+      if (isFullscreen()) {
+        if (nativeElement() === el) {
+          (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+        } else {
+          el.classList.remove("gpx-fullscreen-fallback");
+          document.documentElement.classList.remove("gpx-no-scroll");
+          update();
+        }
+      } else {
+        var request = el.requestFullscreen || el.webkitRequestFullscreen;
+        if (request) {
+          var p = request.call(el);
+          if (p && p.catch) p.catch(fallback);
+        } else {
+          fallback();
+        }
+      }
+    }
+    function fallback() {
+      el.classList.add("gpx-fullscreen-fallback");
+      document.documentElement.classList.add("gpx-no-scroll");
+      update();
+    }
+
+    document.addEventListener("fullscreenchange", update);
+    document.addEventListener("webkitfullscreenchange", update);
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Escape" && el.classList.contains("gpx-fullscreen-fallback")) toggle();
+    });
+
+    var Control = L.Control.extend({
+      options: { position: "topleft" },
+      onAdd: function() {
+        var div = L.DomUtil.create("div", "leaflet-bar leaflet-control gpx-fullscreen-control");
+        button = L.DomUtil.create("a", "", div);
+        button.href = "#";
+        button.setAttribute("role", "button");
+        L.DomEvent.disableClickPropagation(div);
+        L.DomEvent.on(button, "click", function(e) {
+          L.DomEvent.preventDefault(e);
+          toggle();
+        });
+        update();
+        return div;
+      }
+    });
+    map.addControl(new Control());
+  }
+
   // Helper method to get DOM element by class
   function _c(c) {
     return container.getElementsByClassName(c)[0];
