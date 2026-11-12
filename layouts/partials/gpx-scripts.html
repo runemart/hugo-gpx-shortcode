@@ -1,0 +1,26 @@
+{{- /*
+  CSS and scripts for the gpx shortcode. Include it once, at the end of the
+  page, on pages that use the shortcode, e.g. in the footer:
+    {{ if .HasShortcode "gpx" }}{{ partial "gpx-scripts.html" . }}{{ end }}
+  The scripts use defer, so they keep their order and don't block rendering.
+  leaflet-gpx is hosted locally (static/gpx-shortcode/leaflet-gpx/gpx.min.js,
+  v1.7.0 from cdnjs, sha512 checked against cdnjs' published SRI).
+*/ -}}
+{{- $layers := site.Params.gpx.layers -}}
+{{- if not $layers -}}
+  {{- $layers = slice (dict "url" "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" "attribution" "© <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors") -}}
+{{- end -}}
+{{- $config := dict
+  "colors" (site.Params.gpx.trackColors | default (slice "blue" "darkblue" "purple"))
+  "layers" $layers
+  "iconBase" ("/gpx-shortcode/" | relURL)
+-}}
+<link rel="stylesheet" href="{{ site.Params.gpx.leafletCSS | default ("/gpx-shortcode/leaflet/leaflet.css" | relURL) }}" crossorigin="" />
+<link rel="stylesheet" href="{{ "/gpx-shortcode/style.css" | relURL }}" />
+<link rel="stylesheet" href="{{ "/gpx-shortcode/leaflet-distance-marker.css" | relURL }}" />
+<script>window.gpxConfig = {{ $config }};</script>
+<script defer src="{{ "/gpx-shortcode/leaflet/leaflet.js" | relURL }}"></script>
+<script defer src="{{ "/gpx-shortcode/leaflet.geometryutil.js" | relURL }}"></script>
+<script defer src="{{ "/gpx-shortcode/leaflet-distance-marker.js" | relURL }}"></script>
+<script defer src="{{ site.Params.gpx.leafletGpxJS | default ("/gpx-shortcode/leaflet-gpx/gpx.min.js" | relURL) }}"></script>
+<script defer src="{{ "/gpx-shortcode/gpx.js" | relURL }}"></script>
